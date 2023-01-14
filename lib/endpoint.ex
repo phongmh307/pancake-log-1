@@ -7,7 +7,7 @@ defmodule LogCake.Endpoint do
 
   get "/:file_id" do
     %{"file_id" => file_id} = conn.params
-    storage_path = Application.get_env(:pancake_log, :storage_path)
+    storage_path = Application.get_env(:pancake_log, :storage_path, "./log_vcl")
 
     with(
       {_, [_start_ts, _end_ts]} <- {:file_id_check, String.split(file_id, "_")},

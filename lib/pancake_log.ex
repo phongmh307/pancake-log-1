@@ -3,7 +3,7 @@ defmodule LogCake do
   Module chứa interface để thao tác với LogCake client
   """
 
-  @storage_path Application.get_env(:pancake_log, :storage_path)
+  @storage_path Application.get_env(:pancake_log, :storage_path, "./log_vcl")
 
   # 10 mins
   @shard_interval 600
@@ -53,10 +53,10 @@ defmodule LogCake do
   end
 
   # Format như sau:
-  # - 2 bytes chỉ định độ lớn của metadata. Nghĩa là độ lớn tối đa của metadata là ~65KB
   # - 4 bytes chỉ định độ lớn của payload. Nghĩa là độ lớn tối đa của payload là ~4GB
-  # - metadata bytes
+  # - 2 bytes chỉ định độ lớn của metadata. Nghĩa là độ lớn tối đa của metadata là ~65KB
   # - payload bytes
+  # - metadata bytes
   defp construct_log_payload(payload, metadata) do
     io_metadata =
       Enum.reduce(metadata, [], fn {key, value}, acc ->
@@ -76,6 +76,6 @@ defmodule LogCake do
         is_list(payload) -> IO.iodata_length(payload)
       end
 
-    [<<io_metadata_size::16>>, <<payload_size::32>>, io_metadata, payload]
+    [<<payload_size::32>>, <<io_metadata_size::16>>, payload, io_metadata]
   end
 end
