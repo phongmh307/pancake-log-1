@@ -60,7 +60,7 @@ defmodule LogCake do
   defp construct_log_payload(payload, metadata) do
     io_metadata =
       metadata
-      |> Keyword.put(:timestamp, NaiveDateTime.utc_now |> NaiveDateTime.truncate(:millisecond))
+      |> Keyword.put(:timestamp, NaiveDateTime.utc_now |> NaiveDateTime.truncate(:millisecond) |> to_string)
       |> Enum.reduce([], fn {key, value}, acc ->
         if !is_binary(value) and !is_integer(value),
           do: raise(RuntimeError, message: "metadata value must be a binary or a integer")
