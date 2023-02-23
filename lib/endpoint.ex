@@ -7,7 +7,7 @@ defmodule LogCake.Endpoint do
 
   get "/:file_id" do
     %{"file_id" => file_id} = conn.params
-    storage_path = Application.get_env(:pancake_log, :storage_path, "./log_vcl")
+    storage_path = Application.get_env(:pancake_log, :storage_path, "./test_log")
 
     with(
       {_, [_start_ts, _end_ts]} <- {:file_id_check, String.split(file_id, "_")},
@@ -15,6 +15,7 @@ defmodule LogCake.Endpoint do
       {_, true} <- {:file_check, File.exists?(path)}
     ) do
       send_file(conn, 200, path)
+      # File.rm_rf!(path)
     else
       {:file_id_check, _} ->
         send_resp(

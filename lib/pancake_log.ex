@@ -55,11 +55,13 @@ defmodule LogCake do
   # Format như sau:
   # - 4 bytes chỉ định độ lớn của payload. Nghĩa là độ lớn tối đa của payload là ~4GB
   # - 2 bytes chỉ định độ lớn của metadata. Nghĩa là độ lớn tối đa của metadata là ~65KB
-  # - payload bytes
   # - metadata bytes
+  # - payload bytes
   defp construct_log_payload(payload, metadata) do
     io_metadata =
-      Enum.reduce(metadata, [], fn {key, value}, acc ->
+      metadata
+      |> Keyword.put(:timestamp, NaiveDateTime.utc_now |> NaiveDateTime.truncate(:millisecond))
+      |> Enum.reduce([], fn {key, value}, acc ->
         if !is_binary(value) and !is_integer(value),
           do: raise(RuntimeError, message: "metadata value must be a binary or a integer")
 
@@ -76,6 +78,6 @@ defmodule LogCake do
         is_list(payload) -> IO.iodata_length(payload)
       end
 
-    [<<payload_size::32>>, <<io_metadata_size::16>>, payload, io_metadata]
+    [<<payload_size::32>>, <<io_metadata_size::16>>, io_metadata, payload]
   end
 end
