@@ -46,7 +46,7 @@ defmodule LogCake do
       io_device
     else
       # Có thể race-condition ở đây, có thể bỏ qua vì không nghiêm trọng
-      io_device = File.open!(path, [:delayed_write, :raw, :append])
+      io_device = File.open!(path, [:delayed_write, :append])
       :persistent_term.put(key, io_device)
       io_device
     end
