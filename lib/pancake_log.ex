@@ -22,16 +22,16 @@ defmodule LogCake do
     @heal_check_interval 15_000
     def init(device_path) do
       open_device(device_path)
-      :timer.apply_interval(@heal_check_interval, :health_check, [device_path])
+      :timer.apply_interval(@heal_check_interval, __MODULE__, :health_check, [device_path])
       {:ok, nil}
     end
 
     defp open_device(device_path) do
-      File.open!(path, [:delayed_write, :append])
+      File.open!(device_path, [:delayed_write, :append])
     end
 
     @impl true
-    def handle_call(:get_io_device, io_device) do
+    def handle_call(:get_io_device, _from, io_device) do
       {:reply, io_device}
     end
 
