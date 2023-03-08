@@ -12,7 +12,7 @@ defmodule LogCake.Application do
 
     children = [
       {LogCake.Endpoint, endpoint_opts},
-      {LogCake.LogFileHolder, []}
+      {LogCake.LogDeviceHolder, []}
     ]
 
     opts = [strategy: :one_for_one, name: EventHubCake.Supervisor]
