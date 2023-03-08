@@ -11,7 +11,8 @@ defmodule LogCake.Application do
     endpoint_opts = [port: Application.get_env(:pancake_log, :adapter_port, "4002")]
 
     children = [
-      {LogCake.Endpoint, endpoint_opts}
+      {LogCake.Endpoint, endpoint_opts},
+      {LogCake.LogFileHolder, []}
     ]
 
     opts = [strategy: :one_for_one, name: EventHubCake.Supervisor]

@@ -3,8 +3,48 @@ defmodule LogCake do
   Module chứa interface để thao tác với LogCake client
   """
 
-  @storage_path Application.get_env(:pancake_log, :storage_path, "./log_vcl")
+  defmodule LogDeviceHolder do
+    use GenServer
 
+    def start_link(device_path) do
+      GenServer.start(__MODULE__, [device_path], name: Module.concat(__MODULE__, device_path))
+    end
+
+    def get_io_device(device_path) do
+      GenServer.call(Module.concat(__MODULE__, device_path), :get_io_device)
+    end
+
+    def health_check(device_path) do
+      GenServer.cast(Module.concat(__MODULE__, device_path), :health_check)
+    end
+
+    @impl true
+    @heal_check_interval 15_000
+    def init(device_path) do
+      open_device(device_path)
+      :timer.apply_interval(@heal_check_interval, :health_check, [device_path])
+      {:ok, nil}
+    end
+
+    defp open_device(device_path) do
+      File.open!(path, [:delayed_write, :append])
+    end
+
+    @impl true
+    def handle_call(:get_io_device, io_device) do
+      {:reply, io_device}
+    end
+
+    @impl true
+    def handle_cast({:health_check, device_path}, io_device) do
+      case :file.read(io_device, 0) do
+        {:ok, _} -> {:noreply, io_device}
+        {:error, _} -> {:noreply, open_device(device_path)}
+      end
+    end
+  end
+
+  @storage_path Application.get_env(:pancake_log, :storage_path, "./log_vcl")
   # 10 mins
   @shard_interval 600
 
@@ -25,7 +65,7 @@ defmodule LogCake do
   @spec log(log_payload(), list()) :: :ok
   def log(payload, metadata \\ []) do
     path = current_path()
-    io_device = get_io_device(path)
+    io_device = LogDeviceHolder.get_io_device(path)
     IO.binwrite(io_device, construct_log_payload(payload, metadata))
     :ok
   end
@@ -35,21 +75,6 @@ defmodule LogCake do
     shard_id = div(System.os_time(:second), @shard_interval) * @shard_interval
     file_name = "#{Integer.to_string(shard_id)}_#{Integer.to_string(shard_id + @shard_interval)}"
     Path.join(@storage_path, file_name)
-  end
-
-  @compile {:inline, get_io_device: 1}
-  defp get_io_device(path) do
-    key = {__MODULE__, :io_device, path}
-    io_device = :persistent_term.get(key, nil)
-
-    if io_device do
-      io_device
-    else
-      # Có thể race-condition ở đây, có thể bỏ qua vì không nghiêm trọng
-      io_device = File.open!(path, [:delayed_write, :append])
-      :persistent_term.put(key, io_device)
-      io_device
-    end
   end
 
   # Format như sau:
@@ -66,7 +91,7 @@ defmodule LogCake do
           do: raise(RuntimeError, message: "metadata value must be a binary or a integer")
 
         value = if is_integer(value), do: Integer.to_string(value), else: value
-        io = [Atom.to_string(key), "=", value]
+        io = [Atom.to_string(key), <<1>>, value]
         if acc == [], do: io, else: [io, 0 | acc]
       end)
 
