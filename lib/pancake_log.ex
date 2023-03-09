@@ -7,46 +7,107 @@ defmodule LogCake do
     use GenServer
 
     def start_link(device_path) do
-      GenServer.start(__MODULE__, [device_path], name: Module.concat(__MODULE__, device_path))
+      GenServer.start_link(__MODULE__, device_path, name: Module.concat(__MODULE__, device_path))
     end
 
     def get_io_device(device_path) do
       GenServer.call(Module.concat(__MODULE__, device_path), :get_io_device)
     end
 
-    def health_check(device_path) do
-      GenServer.cast(Module.concat(__MODULE__, device_path), :health_check)
+    @impl true
+    def init(device_path) do
+      io_device = open_device(device_path)
+      {:ok, {device_path, io_device}}
     end
 
     @impl true
-    @heal_check_interval 15_000
-    def init(device_path) do
-      open_device(device_path)
-      :timer.apply_interval(@heal_check_interval, __MODULE__, :health_check, [device_path])
-      {:ok, nil}
+    def handle_call(:get_io_device, _from, {_device_path, io_device} = state) do
+      {:reply, io_device, state}
+    end
+
+    @impl true
+    def handle_call(:get_device_path, _from, {device_path, _io_device} = state) do
+      {:reply, device_path, state}
     end
 
     defp open_device(device_path) do
       File.open!(device_path, [:delayed_write, :append])
     end
+  end
 
-    @impl true
-    def handle_call(:get_io_device, _from, io_device) do
-      {:reply, io_device}
+  # 10 mins
+  defmodule LogDeviceMaster do
+    alias LogCake.LogDeviceHolder
+    use DynamicSupervisor
+
+    def start_link(args) do
+      DynamicSupervisor.start_link(__MODULE__, args, name: __MODULE__)
     end
 
-    @impl true
-    def handle_cast({:health_check, device_path}, io_device) do
-      case :file.read(io_device, 0) do
-        {:ok, _} -> {:noreply, io_device}
-        {:error, _} -> {:noreply, open_device(device_path)}
+    def init_child() do
+      for child <- generate_necessary_log_holder_paths(System.os_time(:second)) do
+        start_child(child)
       end
+      :ok
+    end
+
+    def start_child(shard_time) do
+      DynamicSupervisor.start_child(__MODULE__, {LogDeviceHolder, shard_time})
+    end
+
+    def test() do
+      DynamicSupervisor.which_children(__MODULE__)
+    end
+
+    def handle_device_holder() do
+      neccessary_log_holder_paths = generate_necessary_log_holder_paths(System.os_time(:second))
+      survived_log_holder_paths =
+        __MODULE__
+        |> DynamicSupervisor.which_children()
+        |> Enum.reduce([], fn {_, pid, _type_pid, _params}, acc ->
+          device_path =
+            pid
+            |> Process.info()
+            |> Keyword.get(:registered_name)
+            |> GenServer.call(:get_device_path)
+
+          if device_path not in neccessary_log_holder_paths do
+            DynamicSupervisor.terminate_child(__MODULE__, pid)
+            acc
+          else
+            acc ++ [device_path]
+          end
+        end)
+
+      neccessary_log_holder_paths
+      |> Kernel.--(survived_log_holder_paths)
+      |> Enum.each(fn new_child_path ->
+        DynamicSupervisor.start_child(__MODULE__, {LogDeviceHolder, new_child_path})
+      end)
+    end
+
+    @shard_interval 600
+    @interval_checking_holder 10_000
+    def init(_) do
+      :timer.apply_interval(
+        @interval_checking_holder,
+        __MODULE__,
+        :handle_device_holder,
+        []
+      )
+      DynamicSupervisor.init(strategy: :one_for_one)
+    end
+
+    defp generate_necessary_log_holder_paths(time) do
+      [
+        LogCake.path(time - @shard_interval),
+        LogCake.path(time),
+        LogCake.path(time + @shard_interval)
+      ]
     end
   end
 
   @storage_path Application.get_env(:pancake_log, :storage_path, "./log_vcl")
-  # 10 mins
-  @shard_interval 600
 
   @doc """
   Log 1 entry. Cấu trúc của 1 log entry bao gồm metadata và payload
@@ -64,15 +125,16 @@ defmodule LogCake do
   @type log_payload :: binary() | iodata()
   @spec log(log_payload(), list()) :: :ok
   def log(payload, metadata \\ []) do
-    path = current_path()
+    path = path(System.os_time(:second))
     io_device = LogDeviceHolder.get_io_device(path)
     IO.binwrite(io_device, construct_log_payload(payload, metadata))
     :ok
   end
 
-  @compile {:inline, current_path: 0}
-  defp current_path do
-    shard_id = div(System.os_time(:second), @shard_interval) * @shard_interval
+  @shard_interval 600
+  # @compile {:inline, path: 0}
+  def path(time) do
+    shard_id = div(time, @shard_interval) * @shard_interval
     file_name = "#{Integer.to_string(shard_id)}_#{Integer.to_string(shard_id + @shard_interval)}"
     Path.join(@storage_path, file_name)
   end
