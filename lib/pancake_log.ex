@@ -107,7 +107,7 @@ defmodule LogCake do
     end
   end
 
-  @storage_path Application.get_env(:pancake_log, :storage_path, "./log_vcl")
+  @storage_path Application.get_env(:pancake_log, :storage_path)
 
   @doc """
   Log 1 entry. Cấu trúc của 1 log entry bao gồm metadata và payload

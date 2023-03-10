@@ -5,7 +5,7 @@ defmodule LogCake.Application do
   def start(_type, _args) do
     ensure_config_exists()
 
-    storage_path = Application.get_env(:pancake_log, :storage_path, "./log_vcl")
+    storage_path = Application.get_env(:pancake_log, :storage_path)
     File.mkdir_p!(storage_path)
 
     endpoint_opts = [port: Application.get_env(:pancake_log, :adapter_port, 4002)]
@@ -22,7 +22,7 @@ defmodule LogCake.Application do
 
   defp ensure_config_exists do
     adapter_port = Application.get_env(:pancake_log, :adapter_port, 4002)
-    storage_path = Application.get_env(:pancake_log, :storage_path, "./log_vcl")
+    storage_path = Application.get_env(:pancake_log, :storage_path)
 
     if !adapter_port,
       do:
