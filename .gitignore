@@ -24,3 +24,4 @@ pancake_log-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+/log_vcl
