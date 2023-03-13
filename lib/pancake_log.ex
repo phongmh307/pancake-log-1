@@ -74,6 +74,7 @@ defmodule LogCake do
 
           if device_path not in neccessary_log_holder_paths do
             DynamicSupervisor.terminate_child(__MODULE__, pid)
+            File.rm_rf!(device_path)
             acc
           else
             acc ++ [device_path]
@@ -88,7 +89,7 @@ defmodule LogCake do
     end
 
     @shard_interval 600
-    @interval_checking_holder 10_000
+    @interval_checking_holder 120_000
     def init(_) do
       :timer.apply_interval(
         @interval_checking_holder,
@@ -101,9 +102,11 @@ defmodule LogCake do
 
     defp generate_necessary_log_holder_paths(time) do
       [
+        LogCake.path(time - 2 * @shard_interval),
         LogCake.path(time - @shard_interval),
         LogCake.path(time),
-        LogCake.path(time + @shard_interval)
+        LogCake.path(time + @shard_interval),
+        LogCake.path(time + 2 * @shard_interval)
       ]
     end
   end
