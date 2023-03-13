@@ -32,6 +32,7 @@ defmodule LogCake do
 
     defp open_device(device_path) do
       File.open!(device_path, [:delayed_write, :append])
+      |> IO.inspect(label: "result open logging device")
     end
   end
 
