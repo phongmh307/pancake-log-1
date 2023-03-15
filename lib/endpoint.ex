@@ -15,8 +15,6 @@ defmodule LogCake.Endpoint do
       {_, true} <- {:file_check, File.exists?(path)}
     ) do
       conn = send_file(conn, 200, path)
-      spawn fn -> File.rm_rf!(path) end
-      halt(conn)
     else
       {:file_id_check, _} ->
         send_resp(
