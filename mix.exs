@@ -23,7 +23,11 @@ defmodule LogCake.MixProject do
   defp deps do
     [
       {:plug, "~> 1.10"},
-      {:plug_cowboy, "~> 1.0"}
+      {:plug_cowboy, "~> 1.0"},
+      {:connection, "~> 1.1"},
+      {:httpoison, "~> 1.0"},
+      {:poison, "~> 3.1"},
+      {:poolboy, "~> 1.5"}
     ]
   end
 end

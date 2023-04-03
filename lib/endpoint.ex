@@ -14,7 +14,7 @@ defmodule LogCake.Endpoint do
       path = Path.join(storage_path, file_id),
       {_, true} <- {:file_check, File.exists?(path)}
     ) do
-      conn = send_file(conn, 200, path)
+      send_file(conn, 200, path)
     else
       {:file_id_check, _} ->
         send_resp(
