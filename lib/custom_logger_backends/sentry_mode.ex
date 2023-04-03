@@ -27,7 +27,7 @@ defmodule LogCake.CustomLoggerBackends.SentryMode do
         state
         | format: Logger.Formatter.compile(Keyword.get(options, :format)), # format default có sẵn trong hàm moudle Logger,
           metadata: Keyword.get(options, :metadata, []) |> Keyword.put_new(:node, Node.self()),
-          level: Keyword.get(options, :level, :warning),
+          level: Keyword.get(options, :level, :error),
           log_final_storage: Keyword.get(options, :log_final_storage), # Đây là require config đã được check trước
           logstash_index: Keyword.get(options, :logstash_index)
       }
