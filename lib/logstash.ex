@@ -108,11 +108,13 @@ end
 defmodule LogCake.Logstash.Connection do
   use Connection
   @app :pancake_log
-  @logstash_ip (Application.compile_env(@app, :logstash) || [ip: '10.1.8.196', port: 5046]) |> Keyword.get(:ip)
-  @logstash_port (Application.compile_env(@app, :logstash) || [ip: '10.1.8.196', port: 5046]) |> Keyword.get(:port)
 
   def start_link(_) do
-    Connection.start_link(__MODULE__, {@logstash_ip, @logstash_port, [send_timeout: 5000], 10000})
+    Connection.start_link(__MODULE__, {
+      (Application.get_env(@app, :logstash) || [ip: '10.1.8.196', port: 5046]) |> Keyword.get(:ip),
+      (Application.get_env(@app, :logstash) || [ip: '10.1.8.196', port: 5046]) |> Keyword.get(:port),
+      [send_timeout: 5000], 10000
+    })
   end
 
   def init({host, port, opts, timeout}) do
