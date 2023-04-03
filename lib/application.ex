@@ -6,7 +6,7 @@ defmodule LogCake.Application do
 
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
-    if System.get_env("DEV") do
+    if System.get_env("DEV_MODE") do
       Application.put_env(@app, :log_final_storage, [:logstash])
       Application.put_env(@app, :enable_sentry_mode, true)
       Application.put_env(@app, :logstash, [ip: '10.1.8.196', port: 5046])
