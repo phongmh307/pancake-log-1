@@ -13,7 +13,7 @@ defmodule LogCake.Application do
       Application.put_env(
         @app,
         LogCake.CustomLoggerBackends.SentryMode,
-        [level: :warning, metadata: [node: Node.self()], logstash_index: "botcake_local_crash"]
+        [level: :error, metadata: [node: Node.self()], logstash_index: "botcake_local_crash"]
       )
     end
 
