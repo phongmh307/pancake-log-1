@@ -19,8 +19,13 @@ Then add your configuration:
 
 ```elixir
 config :pancake_log,
-  adapter_port: 4002,
-  storage_path: "./test_log"
+  log_final_storage: [:logstash],
+  enable_sentry_mode: true
+```
+
+```elixir
+config :pancake_log, :sentry_mode,
+  logstash_index: index_name (config tên index trên logstash tuỳ từng app)
 ```
 
 Log to file using log/1 function:
