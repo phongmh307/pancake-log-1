@@ -125,9 +125,21 @@ defmodule LogCake do
       :ok
 
   """
+
+  def log(payload) when is_map(payload) do
+    LogCake.Logstash.log(payload)
+  end
+
   @type log_payload :: binary() | iodata()
   @spec log(log_payload(), list()) :: :ok
   def log(payload, metadata \\ []) do
+    path = path(System.os_time(:second))
+    io_device = LogDeviceHolder.get_io_device(path)
+    IO.binwrite(io_device, construct_log_payload(payload, metadata))
+    :ok
+  end
+
+  def do_log(:s3, payload, metadata \\ []) do
     path = path(System.os_time(:second))
     io_device = LogDeviceHolder.get_io_device(path)
     IO.binwrite(io_device, construct_log_payload(payload, metadata))

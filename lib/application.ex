@@ -14,6 +14,7 @@ defmodule LogCake.Application do
         :sentry_mode,
         [logstash_index: "botcake_local_crash"]
       )
+      Application.put_env(@app, :s3, [storage_path: "./test_log", adapter_port: 4010])
     end
 
     ensure_config_respectable()
