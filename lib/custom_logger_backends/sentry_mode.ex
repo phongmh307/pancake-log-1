@@ -36,10 +36,9 @@ defmodule LogCake.CustomLoggerBackends.SentryMode do
 
   @impl true
   def handle_event(
-    {level, _gl, {Logger, msg, ts, _md}},
+    {level, _gl, {Logger, msg, _ts, _md}},
     %__MODULE__{
       level: log_level,
-      format: log_format,
       metadata: log_metadata,
       log_final_storage: log_final_storage,
       logstash_index: logstash_index

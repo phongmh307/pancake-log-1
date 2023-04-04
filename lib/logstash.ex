@@ -1,5 +1,7 @@
 defmodule LogCake.Logstash do
-  def start_link() do
+  def start_link(opts) do
+    ip = Keyword.get(opts, :ip)
+    port = Keyword.get(opts, :port)
     pool_opts = [
       name: {:local, :logstash_pool},
       worker_module: __MODULE__.Connection,
@@ -7,17 +9,22 @@ defmodule LogCake.Logstash do
       size: 5
     ]
     children = [
-      :poolboy.child_spec(:logstash_pool, pool_opts, [])
+      :poolboy.child_spec(:logstash_pool, pool_opts, [{ip, port}])
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
   end
 
-  # Có thể gửi 1 list payload để bulk log
   def log(payload) do
-    spawn(fn -> send_log(payload) end)
-    :ok
+    if :persistent_term.get({__MODULE__, :use_logcake_logstash?}) do
+      spawn(fn -> send_log(payload) end)
+      :ok
+    else
+      {module, function} = :persistent_term.get({__MODULE__, :mf_logstash})
+      apply(module, function, payload)
+    end
   end
+
 
   defp send_log(payload) do
     case preprocess_payload(payload) do
@@ -109,12 +116,11 @@ defmodule LogCake.Logstash.Connection do
   use Connection
   @app :pancake_log
 
-  def start_link(_) do
-    Connection.start_link(__MODULE__, {
-      (Application.get_env(@app, :logstash) || [ip: '10.1.8.196', port: 5046]) |> Keyword.get(:ip),
-      (Application.get_env(@app, :logstash) || [ip: '10.1.8.196', port: 5046]) |> Keyword.get(:port),
-      [send_timeout: 5000], 10000
-    })
+  def start_link([{ip, port}]) do
+    Connection.start_link(
+      __MODULE__,
+      {ip, port, [send_timeout: 5000], 10000}
+    )
   end
 
   def init({host, port, opts, timeout}) do
