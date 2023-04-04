@@ -21,7 +21,7 @@ defmodule LogCake.Logstash do
       :ok
     else
       {module, function} = :persistent_term.get({__MODULE__, :mf_logstash})
-      apply(module, function, payload)
+      apply(module, function, [payload])
     end
   end
 
