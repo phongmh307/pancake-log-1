@@ -11,7 +11,7 @@ defmodule LogCake.Application do
       Application.put_env(@app, :enable_sentry_mode, true)
       Application.put_env(
         @app,
-        LogCake.CustomLoggerBackends.SentryMode,
+        :sentry_mode,
         [logstash_index: "botcake_local_crash"]
       )
     end
@@ -22,7 +22,7 @@ defmodule LogCake.Application do
       Logger.add_backend(LogCake.CustomLoggerBackends.SentryMode)
       Logger.configure_backend(
         LogCake.CustomLoggerBackends.SentryMode,
-        Application.get_env(@app, LogCake.CustomLoggerBackends.SentryMode, [])
+        Application.get_env(@app, :sentry_mode, [])
         |> Keyword.take([:format, :level, :metadata, :logstash_index])
         |> Keyword.put(:log_final_storage, Application.get_env(@app, :log_final_storage))
       )
@@ -126,7 +126,7 @@ defmodule LogCake.Application do
             {
               :logstash_index,
               Keyword.get(
-                Application.get_env(@app, LogCake.CustomLoggerBackends.SentryMode, []),
+                Application.get_env(@app, :sentry_mode, []),
                 :logstash_index
               )
             }
